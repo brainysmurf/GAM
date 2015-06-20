@@ -1,3 +1,49 @@
+Importable GAM
+============================
+Work in progress. Proof of concept only. Should work everywhere (but if it doesn't in windows it's because I can't test it)
+Adds the following features:
+
+* Installable into a virtualenv (in fact, it requires it)
+* Provides "gamcli" command onto your path
+* Import a helper function that can run gam commands
+* Begins to incorporate [click](http://click.pocoo.org/4/) 
+
+Install into a Virtualenv
+-------------------------
+Recommend using [pyenv](https://github.com/yyuu/pyenv) and [pyenv-virtualenv](https://github.com/yyuu/pyenv-virtualenv)
+cd path_to_dir
+pip install -e .
+That's it. Now you have a new command line "gamcli"
+
+
+Authenticate with Google
+------------------------
+From inside the directory, run python gam.py info domain and you'll get the usual rigamorle. You have to do this first before being able to use gamcli or the helper function
+
+
+Use gamcli
+----------
+gamcli --help
+
+
+Import a helper function
+------------------------
+from gam.cli import ImportableGam
+run = ImportableGam()
+run.command_from_string('gam info domain')
+
+
+What's different from Ditto Gam?
+--------------------------------
+It provides a more modern cli interface, but manages to sort of "bootstrap" the old code, so nothing is broken, you can still use the old commands in the same way, but you can also opt-in on these other features.
+
+
+How does it work?
+-----------------
+Most of the magic happens in cli/cli.py, and most of the heavy lifing is done with click. 
+
+
+
 Dito GAM
 ============================
 GAM is a free, open source command line tool for
