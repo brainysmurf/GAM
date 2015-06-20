@@ -53,6 +53,7 @@ coverage.xml
 docs/_build/
 
 # GAM specific
+*.sublime-*
 client_secrets.json
 oauth2.txt*
 oauth2service*
