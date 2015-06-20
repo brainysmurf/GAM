@@ -3,16 +3,18 @@ Importable GAM
 Work in progress. Proof of concept only. Should work everywhere (but if it doesn't in windows it's because I can't test it)
 Adds the following features:
 
-* Installable into a virtualenv (in fact, it requires it)
+* Installable into a virtualenv (in fact, opt-in features requires it)
 * Provides "gamcli" command onto your path
-* Import a helper function that can run gam commands
-* Begins to incorporate [click](http://click.pocoo.org/4/) 
+* Import a helper function that can run exact same gam commands listed in wiki. The idea is to send it strings rather than piping it to the system
+* Incorporates [click](http://click.pocoo.org/4/) and gets some bonus free-stuff, like automated help system, and python3 compatibility (although we have to change the print functions into click.echo calls, to start)
 
 Install into a Virtualenv
 -------------------------
 Recommend using [pyenv](https://github.com/yyuu/pyenv) and [pyenv-virtualenv](https://github.com/yyuu/pyenv-virtualenv)
+```
 cd path_to_dir
 pip install -e .
+```
 That's it. Now you have a new command line "gamcli"
 
 
@@ -23,15 +25,18 @@ From inside the directory, run python gam.py info domain and you'll get the usua
 
 Use gamcli
 ----------
+```
 gamcli --help
+```
 
 
 Import a helper function
 ------------------------
+```
 from gam.cli import ImportableGam
 run = ImportableGam()
 run.command_from_string('gam info domain')
-
+```
 
 What's different from Ditto Gam?
 --------------------------------
