@@ -54,6 +54,7 @@ docs/_build/
 
 # GAM specific
 *.sublime-*
+*.python-version
 client_secrets.json
 oauth2.txt*
 oauth2service*
