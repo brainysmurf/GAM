@@ -5,7 +5,7 @@ Defines the interface for the command line
 import click
 from click.core import BaseCommand
 import sys, re
-
+from indentedtextparser import IndentedTextParser
 from gamlib import *
 
 class CliState:
@@ -118,6 +118,10 @@ class ImportableGam:
 	def __init__(self, catch_exceptions=False, jsonify=True):
 		self.catch_exceptions = catch_exceptions
 		self.jsonify = jsonify
+		if self.jsonify:
+			self.indent_parser = IndentedTextParser()
+		else:
+			self.indent_parser = None
 
 	def parse_value(self, value):
 		"""
@@ -129,28 +133,6 @@ class ImportableGam:
 			return False
 		return value
 
-	def structure_output(self, output):	
-		"""
-		Convert results into python-friendly dictionary
-		"""
-		d = {key.strip(): value.strip() for key, value in re.findall('^(.*?):(.*)$', output, re.MULTILINE)}
-		list_keys = [key for key, value in d.items() if not re.sub('^\(.*\)$', '', value)]
-
-		for this_key in list_keys:
-			# this_key's value is empty (or just a parenthesis phrase), so let's see if it is actually a part of a list
-			# which gam does by indenting
-			start = output.index(this_key)
-			this_text = output[start+len(this_key)+2:]
-			end = re.search('^\w', this_text, re.MULTILINE)
-			if end:
-				this_text = this_text[:end.start()]
-			lst = []
-			for line in re.findall('^\W{1,}(.*)$', this_text, re.MULTILINE):
-				lst.append(line.strip())
-			d[this_key] = lst
-
-		return {key.lower().replace(' ', '_'): self.parse_value(value) for key, value in d.items()}
-
 	def command(self, params):
 		if params[0] == 'gam' or params[0] == 'gam.py':
 			params.pop(0)
@@ -160,7 +142,8 @@ class ImportableGam:
 		result = run.invoke(cli, params, catch_exceptions=self.catch_exceptions)
 
 		if self.jsonify and not result.exception:
-			click.echo( self.structure_output(result.output) )
+			python_dict = self.indent_parser.parse(result.output)
+			click.echo( python_dict )
 		else:
 			click.echo(result.output)
 
@@ -168,7 +151,6 @@ class ImportableGam:
 			click.echo(result.exception)
 
 	def command_from_cmdline(self):
-		import sys
 		params = sys.argv
 		self.command(params)
 
@@ -182,9 +164,9 @@ class ImportableGam:
 		self.command(params)
 
 if __name__ == "__main__":
-
 	ig = ImportableGam()
 	# ig.command_from_string('gam info domain')
 	# ig.command_from_string('gam info user adam.morris nolicenses')
+
 	ig.command_from_string('gam info group it.committee')
 
