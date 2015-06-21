@@ -17,7 +17,7 @@ setup(
     packages=['cli', 'gdata', 'googleapiclient', 'oauth2client', 'httplib2'],
     entry_points='''
         [console_scripts]
-        gamcli=cli.cli:cli
+        gami=cli.cli:cli
     ''',
     install_requires = ['click', 'colorama'],
 
