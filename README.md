@@ -1,10 +1,11 @@
-Importable GAM
+GAMI: GAM Improved, GAM Importable GAM Installable-into-virtualenv
 ============================
-Work in progress. Proof of concept only. Should work everywhere (but if it doesn't in windows it's because I can't test it)
-Adds the following features:
+Work in progress, so far, only "gam info domain" is implemented. 
 
-* Installable into a virtualenv (in fact, opt-in features requires it)
-* Provides "gamcli" command onto your path
+In addition to GAM (below), available through "python gam.py", this package adds the following features:
+
+* Installable command line "gami" onto the command line
+* Installable into a virtualenv
 * Import a helper function that can run exact same gam commands listed in wiki. The idea is to send it strings rather than piping it to the system
 * Incorporates [click](http://click.pocoo.org/4/) and gets some bonus free-stuff, like automated help system, and python3 compatibility (although we have to change the print functions into click.echo calls, to start)
 
