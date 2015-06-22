@@ -1,47 +1,49 @@
 GAMI: GAM Improved, GAM Importable GAM Installable-into-virtualenv
 ============================
-Work in progress, so far, only "gam info domain" is implemented. 
 
-In addition to GAM (below), available through "python gam.py", this package adds the following features:
+In addition to GAM (below) this package adds the following features:
 
-* Installable command line "gami" onto the command line
+* Command line utility "gami" is installed into your path
 * Installable into a virtualenv
-* Import a helper function that can run exact same gam commands listed in wiki. The idea is to send it strings rather than piping it to the system
+* Import a helper function that can run exact same gam commands listed in wiki. No more piping out to the system
 * Incorporates [click](http://click.pocoo.org/4/) and gets some bonus free-stuff, like automated help system, and python3 compatibility (although we have to change the print functions into click.echo calls, to start)
 
-Install into a Virtualenv
+1) Install into a Virtualenv
 -------------------------
 Recommend using [pyenv](https://github.com/yyuu/pyenv) and [pyenv-virtualenv](https://github.com/yyuu/pyenv-virtualenv)
 ```
 cd path_to_dir
 pip install -e .
 ```
-That's it. Now you have a new command line "gamcli"
+That's it. Now you have a new command line "gami"
 
 
-Authenticate with Google
+2) Authenticate with Google
 ------------------------
-From inside the directory, run python gam.py info domain and you'll get the usual rigamorle. You have to do this first before being able to use gamcli or the helper function
+From inside the directory, run python gam.py info domain and you'll get the usual rigamorle. You have to do this first before being able to use gami or the helper function
 
 
-Use gamcli
+3a) Use "gami" command line utility
 ----------
 ```
-gamcli --help
+gami --help
 ```
+All the functions have help too.
 
 
-Import a helper function
-------------------------
+3b) Import a helper function
+----------------------------
 ```
-from gam.cli import ImportableGam
-run = ImportableGam()
-run.command_from_string('gam info domain')
+from gami import run_gami_from_string
+run_gami_from_string('gam info domain')    # any regular gam command
 ```
+
+That function returns a python dictionary
+
 
 What's different from Ditto Gam?
 --------------------------------
-It provides a more modern cli interface, but manages to sort of "bootstrap" the old code, so nothing is broken, you can still use the old commands in the same way, but you can also opt-in on these other features.
+It provides a more modern cli interface, but manages to sort of "bootstrap" the old code, so nothing is broken, you can still use the same old commands in the same old way, but you can also opt-in on these other features.
 
 
 How does it work?

@@ -1,8 +1,8 @@
 from cli.cli import cli
-from indentedtextparser import IndentedTextParser
+from output_parser import IndentedTextParser
 import click
 
-class ImportableGam:
+class RunGami:
 	"""
 	Class for use by other packages who want gam's functionality without having to do system calls
 	TODO: Move this into its own file (just have to import the cli function, above)
@@ -54,10 +54,10 @@ class ImportableGam:
 		# Use click's native way of parsing the string into params
 		from click.parser import split_arg_string
 		params = split_arg_string(str)
-		self.command(params)
+		return self.command(params)
 
 if __name__ == "__main__":
-	ig = ImportableGam()
+	ig = RunGami()
 	r = ig.command_from_string('gam info domain')
 	r = ig.command_from_string('gam info user adam.morris nolicenses')
 	r = ig.command_from_string('gam info group it.committee')

@@ -3,12 +3,14 @@ Defines the interface for the command line
 """
 
 import click
-from click.core import BaseCommand
 import sys, re
-from indentedtextparser import IndentedTextParser
-from gamlib import *
+
+from gamlib.legacy import *
 
 class CliState:
+	"""
+	Holds state information that is available for each cli command
+	"""
 	def __init__(self, verbose, json):
 		self.verbose = verbose
 		self.json = json
@@ -33,6 +35,13 @@ def cli(ctx, verbose, json):
 
 	# Yuck
 	ctx.obj = CliState(verbose, json)
+
+@cli.command('version')
+def cli_version():
+	"""
+	Output the version information
+	"""
+	doGAMVersion()
 
 @cli.group()
 @click.pass_context
