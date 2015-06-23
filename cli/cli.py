@@ -19,6 +19,10 @@ class CliState:
 		self.verbose = verbose
 		self.json = json
 		self.legacy = legacy
+		if self.legacy:
+			from gamlib.legacy import *
+		else:
+			from gamlib.lib import *
 
 class ArgOptName(click.ParamType):
 	"""
