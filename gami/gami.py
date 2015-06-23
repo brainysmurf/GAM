@@ -1,4 +1,4 @@
-from cli.cli import cli
+from cli import cli
 from output_parser import IndentedTextParser
 import click
 
