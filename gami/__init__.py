@@ -1,12 +1,13 @@
 from output_parser import IndentedTextParser
-from gami import RunGami
+from named_param import CreateNamedCmd
+
 
 def run_gami_from_string(command_string, jsonify=True, *args, **kwargs):
 	"""
 	Runs the command, and, by default, returns the result as a useful pyton dictionary
 	"""
+	from gami import RunGami
 	r = RunGami(jsonify=jsonify, *args, **kwargs)
 	return r.command_from_string(command_string)
 
-
-__all__ = [RunGami, IndentedTextParser]
+__all__ = [IndentedTextParser, CreateNamedCmd]
