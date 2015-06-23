@@ -30,8 +30,6 @@ usergroup_types = [u'user', u'users', u'group', u'ou', u'org',
                    u'license', u'licenses', u'file', u'all',
                    u'cros']
 
-import click
-
 def convertUTF8(data):
     import collections
     if isinstance(data, str):
@@ -5534,86 +5532,86 @@ def doGetDomainInfo():
       print u'Error: can\'t open file %s for writing' % target_file
       sys.exit(11)
     sys.exit(0)
-  click.echo(u'Google Apps Domain: %s' % domain)
+  print u'Google Apps Domain: %s' % domain
   cd = buildGAPIObject(u'directory')
   if customerId != u'my_customer':
     customer_id = customerId
   else:
     result = callGAPI(service=cd.users(), function=u'list', fields=u'users(customerId)', customer=customerId, sortOrder=u'DESCENDING')
     customer_id = result[u'users'][0][u'customerId']
-  click.echo(u'Customer ID: %s' % customer_id)
+  print u'Customer ID: %s' % customer_id
   default_language = callGAPI(service=adm.defaultLanguage(), function=u'get', domainName=domain)
-  click.echo(u'Default Language: %s' % default_language[u'entry'][u'apps$property'][0][u'value'])
+  print u'Default Language: %s' % default_language[u'entry'][u'apps$property'][0][u'value']
   org_name = callGAPI(service=adm.organizationName(), function='get', domainName=domain)
-  click.echo(u'Organization Name: %s' % org_name[u'entry'][u'apps$property'][0][u'value'])
+  print u'Organization Name: %s' % org_name[u'entry'][u'apps$property'][0][u'value']
   max_users = callGAPI(service=adm.maximumNumberOfUsers(), function=u'get', domainName=domain)
-  click.echo(u'Maximum Users: %s' % max_users[u'entry'][u'apps$property'][0][u'value'])
+  print u'Maximum Users: %s' % max_users[u'entry'][u'apps$property'][0][u'value']
   current_users = callGAPI(service=adm.currentNumberOfUsers(), function=u'get', domainName=domain)
-  click.echo(u'Current Users: %s' % current_users[u'entry'][u'apps$property'][0][u'value'])
+  print u'Current Users: %s' % current_users[u'entry'][u'apps$property'][0][u'value']
   is_dom_verified = callGAPI(service=adm.isVerified(), function=u'get', domainName=domain)
-  click.echo(u'Domain is Verified: %s' % is_dom_verified[u'entry'][u'apps$property'][0][u'value'])
+  print u'Domain is Verified: %s' % is_dom_verified[u'entry'][u'apps$property'][0][u'value']
   domain_edition = callGAPI(service=adm.edition(), function=u'get', domainName=domain)
-  click.echo(u'Domain Edition: %s' % domain_edition[u'entry'][u'apps$property'][0][u'value'])
+  print u'Domain Edition: %s' % domain_edition[u'entry'][u'apps$property'][0][u'value']
   customer_pin = callGAPI(service=adm.customerPIN(), function=u'get', domainName=domain)
-  click.echo(u'Customer PIN: %s' % customer_pin[u'entry'][u'apps$property'][0][u'value'])
+  print u'Customer PIN: %s' % customer_pin[u'entry'][u'apps$property'][0][u'value']
   creation_time = callGAPI(service=adm.creationTime(), function=u'get', domainName=domain)
   my_date = creation_time[u'entry'][u'apps$property'][0][u'value']
   my_date = my_date[:15]
   my_offset = creation_time[u'entry'][u'apps$property'][0][u'value'][19:]
   nice_time = datetime.datetime.strptime(my_date, u"%Y%m%dT%H%M%S")
-  click.echo(u'Domain Creation Time: %s %s' % (nice_time, my_offset))
+  print u'Domain Creation Time: %s %s' % (nice_time, my_offset)
   country_code = callGAPI(service=adm.countryCode(), function=u'get', domainName=domain)
-  click.echo(u'Domain Country Code: %s' % country_code[u'entry'][u'apps$property'][0][u'value'])
+  print u'Domain Country Code: %s' % country_code[u'entry'][u'apps$property'][0][u'value']
   mxverificationstatus = callGAPI(service=adm.mxVerification(), function=u'get', domainName=domain)
   for entry in mxverificationstatus[u'entry'][u'apps$property']:
     if entry[u'name'] == u'verified':
-      click.echo(u'MX Verification Verified: %s' % entry[u'value'])
+      print u'MX Verification Verified: %s' % entry[u'value']
     elif entry[u'name'] == u'verificationMethod':
-      click.echo(u'MX Verification Method: %s' % entry[u'value'])
+      print u'MX Verification Method: %s' % entry[u'value']
   ssosettings = callGAPI(service=adm.ssoGeneral(), function=u'get', domainName=domain)
   for entry in ssosettings[u'entry'][u'apps$property']:
     if entry[u'name'] == u'enableSSO':
-      click.echo(u'SSO Enabled: %s' % entry[u'value'])
+      print u'SSO Enabled: %s' % entry[u'value']
     elif entry[u'name'] == u'samlSignonUri':
-      click.echo(u'SSO Signon Page: %s' % entry[u'value'])
+      print u'SSO Signon Page: %s' % entry[u'value']
     elif entry[u'name'] == u'samlLogoutUri':
-      click.echo(u'SSO Logout Page: %s' % entry[u'value'])
+      print u'SSO Logout Page: %s' % entry[u'value']
     elif entry[u'name'] == u'changePasswordUri':
-      click.echo(u'SSO Password Page: %s' % entry[u'value'])
+      print u'SSO Password Page: %s' % entry[u'value']
     elif entry[u'name'] == u'ssoWhitelist':
-      click.echo(u'SSO Whitelist IPs: %s' % entry[u'value'])
+      print u'SSO Whitelist IPs: %s' % entry[u'value']
     elif entry[u'name'] == u'useDomainSpecificIssuer':
-      click.echo(u'SSO Use Domain Specific Issuer: %s' % entry[u'value'])
+      print u'SSO Use Domain Specific Issuer: %s' % entry[u'value']
   ssokey = callGAPI(service=adm.ssoSigningKey(), function=u'get', silent_errors=True, soft_errors=True, domainName=domain)
   try:
     for entry in ssokey[u'entry'][u'apps$property']:
       if entry[u'name'] == u'algorithm':
-        click.echo(u'SSO Key Algorithm: %s' % entry[u'value'])
+        print u'SSO Key Algorithm: %s' % entry[u'value']
       elif entry[u'name'] == u'format':
-        click.echo(u'SSO Key Format: %s' % entry[u'value'])
+        print u'SSO Key Format: %s' % entry[u'value']
       elif entry[u'name'] == u'modulus':
-        click.echo(u'SSO Key Modulus: %s' % entry[u'value'])
+        print u'SSO Key Modulus: %s' % entry[u'value']
       elif entry[u'name'] == u'exponent':
-        click.echo(u'SSO Key Exponent: %s' % entry[u'value'])
+        print u'SSO Key Exponent: %s' % entry[u'value']
       elif entry[u'name'] == u'yValue':
-        click.echo(u'SSO Key yValue: %s' % entry[u'value'])
+        print u'SSO Key yValue: %s' % entry[u'value']
       elif entry[u'name'] == u'signingKey':
-        click.echo(u'Full SSO Key: %s' % entry[u'value'])
+        print u'Full SSO Key: %s' % entry[u'value']
   except TypeError:
     pass
   migration_status = callGAPI(service=adm.userEmailMigrationEnabled(), function=u'get', domainName=domain)
-  click.echo(u'User Migration Enabled: %s' %  migration_status[u'entry'][u'apps$property'][0][u'value'])
+  print u'User Migration Enabled: %s' %  migration_status[u'entry'][u'apps$property'][0][u'value']
   outbound_gateway_settings = {u'smartHost': u'', u'smtpMode': u''} # Initialize blank in case we get an 1801 Error
   outbound_gateway_settings = callGAPI(service=adm.outboundGateway(), function=u'get', domainName=domain)
   try:
     for entry in outbound_gateway_settings[u'entry'][u'apps$property']:
       if entry[u'name'] == u'smartHost':
-        click.echo(u'Outbound Gateway Smart Host: %s' % entry[u'value'])
+        print u'Outbound Gateway Smart Host: %s' % entry[u'value']
       elif entry[u'name'] == u'smtpMode':
-        click.echo(u'Outbound Gateway SMTP Mode: %s' % entry[u'value'])
+        print u'Outbound Gateway SMTP Mode: %s' % entry[u'value']
   except KeyError:
-    click.echo(u'Outbound Gateway Smart Host: None')
-    click.echo(u'Outbound Gateway SMTP Mode: None')
+    print u'Outbound Gateway Smart Host: None'
+    print u'Outbound Gateway SMTP Mode: None'
 
 def doDeleteUser():
   user_email = sys.argv[3]
