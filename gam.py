@@ -24,11 +24,12 @@ For more information, see http://git.io/gam
 """
 import sys, os, socket
 
-from gamlib import *   # clean this up later
+# This is the main difference: we keep the legacy code in a different area
+# so that we can reuse it elsewhere
+from gamlib.legacy import * 
 
-# Let click manage this
-# reload(sys)  # why need this for setdefaultencoding?
-# sys.setdefaultencoding(u'UTF-8')
+reload(sys)  # why need this for setdefaultencoding?
+sys.setdefaultencoding(u'UTF-8')
 
 
 try:
