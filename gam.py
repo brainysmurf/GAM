@@ -28,9 +28,8 @@ import sys, os, socket
 # so that we can reuse it elsewhere
 from gamlib.legacy import * 
 
-reload(sys)  # why need this for setdefaultencoding?
+reload(sys)
 sys.setdefaultencoding(u'UTF-8')
-
 
 try:
   if os.name == u'nt':
