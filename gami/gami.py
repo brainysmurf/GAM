@@ -1,4 +1,4 @@
-from cli import cli
+from cli.cli import cli
 from output_parser import IndentedTextParser
 import click
 
@@ -27,7 +27,7 @@ class RunGami:
 		return value
 
 	def command(self, params):
-		if params[0] == 'gam' or params[0] == 'gam.py':
+		if params[0] == 'gam' or params[0] == 'gam.py' or params[0] == 'gami':
 			params.pop(0)
 
 		from click.testing import CliRunner

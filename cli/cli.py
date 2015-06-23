@@ -47,16 +47,28 @@ class ArgOptName(click.ParamType):
 @click.pass_context
 def cli(ctx, verbose, json, legacy):
 	"""
-	GAM. Retrieve or set Google Apps domain,
+	GAMi. GAM improved, importable, installable-into-virtualenv
+
+	Piggybacks from GAM
+	Retrieve or set Google Apps domain,
 	user, group and alias settings. Exhaustive list of commands
 	can be found at: https://github.com/jay0lee/GAM/wiki 
+	Although at the moment, only limited set is implemented
 
 	\b
-	Examples:
-	gam info domain
-	gam create user jsmith firstname John lastname Smith password secretpass
-	gam update user jsmith suspended on
-	gam.exe update group announcements add member jsmith
+	Legacy Examples:
+	python gam.py info domain
+	python gam.py create user jsmith firstname John lastname Smith password secretpass
+
+	\b 
+	New Examples (follows same command structure):
+	gami info domain
+	gami create user jsmith firstname John lastname Smith password secretpass
+
+	\b
+	Import from python?
+	from gami import run_from_command_string
+	run_from_command_string('gami info domain')
 	"""
 	ctx.obj = CliState(verbose, json, legacy)
 
@@ -200,7 +212,7 @@ def info(ctx):
 	# The only way to check it is at the preceeding level... here
 
 	if ctx.args[-1] == 'domain':
-		if obj.legacy:
+		if ctx.obj.legacy:
 			doGetDomainInfo()
 
 @info.command(options_metavar="[options]")
