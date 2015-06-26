@@ -370,13 +370,32 @@ class Manager(object):
 
                     self.output(key.key, value)
 
+class MockServiceCall(object):
+    def __init__(self, name):
+        self.name = name
+
+    def __call__(self):
+        pass
+
+class MockService(object):
+    """
+    Just a stupid thing
+    """
+    def __getattr__(self, name):
+        self.__dict__[name] = MockServiceCall(name)
+        return self.__dict__[name]
+
 class MockManager(Manager):
     def init(self):
         self.domain = 'domain'
         self.customerId = 'customerId'
 
     def callGAPI(self, service, function=u"get", silent_errors=False, soft_errors=False, throw_reasons=[], retry_reasons=[], **kwargs):
-        return None
+        pass
+
+    def buildGAPIObject(self, api):
+        self.api = api
+        return MockService()
 
     def call_and_output(self):
         for key, kwargs in self._calls:
