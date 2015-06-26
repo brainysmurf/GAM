@@ -19,10 +19,6 @@ class CliState:
 		self.verbose = verbose
 		self.json = json
 		self.legacy = legacy
-		if self.legacy:
-			from gamlib.legacy import *
-		else:
-			from gamlib.lib import *
 
 class ArgOptName(click.ParamType):
 	"""
@@ -214,7 +210,6 @@ def info(ctx):
 	# gam info domain gets domain info
 	# gam info domain logo <file> 
 	# The only way to check it is at the preceeding level... here
-
 	if ctx.args[-1] == 'domain':
 		if ctx.obj.legacy:
 			doGetDomainInfo()
@@ -269,8 +264,6 @@ def create_user(ctx, username):
 	with ctx.command.validate_named(ctx, ['firstname', 'lastname', '--password', '--changepassword', '--gal', 'org', '--type', '--externalid']) as values:
 		if ctx.obj.legacy:
 			doCreateUser()
-		else:
-			click.echo(values)
 
 @cli_create.command('group', cls=CreateNamedCmd, options_metavar=BACKSPACE)
 @click.argument('email', metavar="<email>")
@@ -283,8 +276,6 @@ def create_group(ctx, email):
 		# do something here in future, we have the values
 		if ctx.obj.legacy:
 			doCreateGroup()
-		else:
-			click.echo(values)
 
 @cli.group('update')
 @click.pass_context
@@ -301,7 +292,7 @@ def update_group(ctx, group_email):
 	Update group info
 	"""
 	with ctx.command.validate_named(ctx, ['--add', '--user']) as values:
-		if ctx.obj.legacy:
+		if ctx.legacy:
 			doUpdateGroup()
 
 @info_domain.command()
