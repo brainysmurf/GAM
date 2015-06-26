@@ -1,3 +1,10 @@
+"""
+GAM has a lot of "Named Parameters"
+where the label and value is defined by separation of spaces
+this wreaks havoc on our parser :(
+hence the need to find a workaround
+"""
+
 import click
 import contextlib, collections
 

@@ -32,7 +32,7 @@ class RunGami:
 
 		from click.testing import CliRunner
 		run = CliRunner()
-		result = run.invoke(cli, params, catch_exceptions=self.catch_exceptions)
+		result = run.invoke(cli, params, catch_exceptions=self.catch_exceptions, legacy=False)
 
 		if self.jsonify and not result.exception:
 			python_dict = self.indent_parser.parse(result.output)

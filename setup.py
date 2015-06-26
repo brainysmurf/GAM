@@ -14,13 +14,13 @@ setup(
     author = "",
     author_email = "",
     keywords = [],
-    packages=['cli', 'gdata', 'googleapiclient', 'oauth2client', 'httplib2'],
+    packages=['cli', 'gdata', 'googleapiclient', 'oauth2client', 'httplib2', 'passlib'],
     entry_points='''
         [console_scripts]
         gami=cli.cli:cli
     ''',
     install_requires = ['click', 'colorama'],
-
+    #install_requires = ['gdata', 'google-api-python-client==1.4.0', 'oauth2client==1.4.7', 'httplib2==0.9', 'passlib==1.6.2']
 
 
     # classifiers = [

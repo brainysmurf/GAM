@@ -122,15 +122,8 @@ gam.exe update group announcements add member jsmith
 '''
 
 def getGamPath():
-
   # Use the __file__ variable instead, that way it'll work inside virutalenvs  
   return os.sep.join(os.path.realpath(__file__).split(os.sep)[:-2]) + os.sep
-
-  if os.name == 'windows' or os.name == 'nt':
-    divider = '\\'
-  else:
-    divider = '/'
-  return os.path.dirname(os.path.realpath(sys.argv[0]))+divider
 
 def doGAMVersion():
   import struct
