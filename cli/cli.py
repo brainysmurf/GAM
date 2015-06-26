@@ -1,13 +1,17 @@
 """
 Defines the interface for the command line
+Routes out to handlers
 """
 
 import click
 import sys, re, collections
 
-from gamlib.legacy import *
+#from gamlib.legacy import *
 
 from gami import CreateNamedCmd
+from gami import Manager, MockManager
+from functools import partial
+
 
 BACKSPACE = '\b'
 
@@ -15,10 +19,20 @@ class CliState:
 	"""
 	Holds state information that is available for each cli command
 	"""
-	def __init__(self, verbose, json, legacy=True):
+	def __init__(self, verbose, json, mock=False, legacy=False):
 		self.verbose = verbose
 		self.json = json
 		self.legacy = legacy
+		self.mock = mock
+
+		# Set up manager
+		# The manager holds the code
+		if self.mock:
+			self.manager_cls = MockManager
+		else:
+			self.manager_cls = Manager
+
+		self.manager = self.manager_cls()
 
 class ArgOptName(click.ParamType):
 	"""
@@ -42,10 +56,11 @@ class ArgOptName(click.ParamType):
 @click.group(context_settings=dict(max_content_width=200))
 @click.option('--verbose/--notverbose', default=False, help="print out stuff")
 @click.option('--json/--nojson', default=True, help="normalize output into a pytong dict")
-@click.option('--legacy/--nolegacy', default=True, help="use legacy code from original ditto gam")
+@click.option('--legacy/--nolegacy', default=False, help="use legacy code from original ditto gam")
+@click.option('--mock/--nomock', default=False, help="used for testing, make mock items instead of network calls")
 #FIXME: Raise NotImplemented if --nolegacy passed but not implemented
 @click.pass_context
-def cli(ctx, verbose, json, legacy):
+def cli(ctx, verbose, json, mock, legacy):
 	"""
 	GAMi. GAM improved, importable, installable-into-virtualenv
 
@@ -70,7 +85,7 @@ def cli(ctx, verbose, json, legacy):
 	from gami import run_from_command_string
 	run_from_command_string('gami info domain')
 	"""
-	ctx.obj = CliState(verbose, json, legacy)
+	ctx.obj = CliState(verbose, json, mock=mock, legacy=legacy)
 
 @cli.command('version')
 @click.pass_obj
@@ -79,7 +94,13 @@ def cli_version(obj):
 	Output the version information
 	"""
 	if obj.legacy:
+		from gamlib.legacy import doGAMVersion
 		doGAMVersion()
+
+	else:
+		obj.actions.doGAMVersion()
+
+
 
 @cli.command('batch', options_metavar=BACKSPACE)
 @click.argument('file', type=click.File('r'), metavar='<filename.ext>')
@@ -132,7 +153,12 @@ def print_users(obj, firstname, lastname, username, ou, suspended, changepasswor
 	TODO: Queries? Order by?
 	"""
 	if obj.legacy:
+		from gamlib.legacy import doPrintUsers
 		doPrintUsers()
+	else:
+		obj.actions.doPrintUsers()
+
+
 
 @cli_print.command('groups', options_metavar=BACKSPACE)
 @click.argument('name', metavar="[name]", default=False)
@@ -155,7 +181,11 @@ def print_groups(obj, name, description, members, managers, owners, settings, ad
 	TODO: [domain] not yet implemented
 	"""
 	if obj.legacy:
-		doPrintGroups()
+		from gamlib.legacy import doPrintGroups
+	else:
+		from gamlib.lib import doPrintGroups
+
+	doPrintGroups()
 
 @cli_print.command('orgs', options_metavar=BACKSPACE)
 @click.argument('name', metavar="[name]", default=False)
@@ -168,7 +198,11 @@ def print_orgs(obj, name, description, parent, inherit):
 	Prints a CSV file of all organizational units in the Google Apps account
 	"""
 	if obj.legacy:
-		doPrintOrgs()
+		from gamlib.legacy import doPrintOrgs
+	else:
+		from gamlib.lib import doPrintOrgs
+
+	doPrintOrgs()
 
 @cli_print.command('resources', options_metavar=BACKSPACE)
 @click.argument('id', metavar="[id]", default=False)
@@ -177,7 +211,11 @@ def print_orgs(obj, name, description, parent, inherit):
 @click.pass_obj
 def print_resources(obj, id, description, email):
 	if obj.legacy:
-		doPrintResources()
+		from gamlib.legacy import doPrintResources
+	else:
+		from gamlib.lib import doPrintResources
+
+	doPrintResources()
 
 @cli_print.command('report', options_metavar=BACKSPACE)
 def print_report(obj):
@@ -196,7 +234,11 @@ def print_aliases(obj, todrive):
 	Print all aliases
 	"""
 	if obj.legacy:
-		doPrintAliases()
+		from gamlib.legacy import doPrintAliases
+	else:
+		from gamlib.lib import doPrintAliases
+
+	doPrintAliases()
 
 @cli.group()
 @click.pass_context
@@ -204,7 +246,6 @@ def info(ctx):
 	"""
 	Provides info, requires command
 	"""
-
 	# The GAM command string can have a group that is also a command
 	# Cases in point:
 	# gam info domain gets domain info
@@ -212,7 +253,19 @@ def info(ctx):
 	# The only way to check it is at the preceeding level... here
 	if ctx.args[-1] == 'domain':
 		if ctx.obj.legacy:
+			from gamlib.legacy import doGetDomainInfo
 			doGetDomainInfo()
+		else:
+			ctx.obj.manager.actions.doGetDomainInfo()
+
+@info.command()
+@click.argument('logo_file', type=click.File('rb'))
+@click.pass_obj
+def logo(obj, logo_file):
+	"""
+	Update the logo, currently not implemented
+	"""
+	pass
 
 @info.command(options_metavar="[options]")
 @click.argument('groupname')
@@ -233,10 +286,17 @@ def info_user(obj, username, nogroups, noaliases, nolicenses, noschemas, uservie
 	"""
 	\b
 	Get information about the user
-	@param USERNAME: username or email address
+
+	\b
+	USERNAME: username or email address, or uid:<id>
+		  if username is passed, automatically expanded using domain info
 	"""
 	if obj.legacy:
-		doGetUserInfo(username)
+		from gamlib.legacy import doGetUserInfo
+		doGetUserInfo()
+	else:
+		obj.manager.actions.doGetUserInfo(username, noaliases, nogroups, noschemas, userview, nolicenses)
+
 
 @info.group('domain')
 @click.pass_context
@@ -263,7 +323,10 @@ def create_user(ctx, username):
 	"""
 	with ctx.command.validate_named(ctx, ['firstname', 'lastname', '--password', '--changepassword', '--gal', 'org', '--type', '--externalid']) as values:
 		if ctx.obj.legacy:
+			from gamlib.legacy import doCreateUser
 			doCreateUser()
+		else:
+			ctx.object.actions.create_user(username)
 
 @cli_create.command('group', cls=CreateNamedCmd, options_metavar=BACKSPACE)
 @click.argument('email', metavar="<email>")
@@ -295,14 +358,6 @@ def update_group(ctx, group_email):
 		if ctx.legacy:
 			doUpdateGroup()
 
-@info_domain.command()
-@click.argument('logo_file', type=click.File('rb'))
-@click.pass_obj
-def logo(obj, logo_file):
-	"""
-	Update the logo, currently not implemented
-	"""
-	pass
 
 
 
