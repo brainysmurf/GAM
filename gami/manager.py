@@ -3,7 +3,6 @@
 """
 import contextlib, os, sys, json
 
-from actions import Actions
 import click
 import resolver
 
@@ -120,8 +119,6 @@ class Manager(object):
         self.key_builder = None
         self.credentials = None
         self.init()
-
-        self.actions = Actions(self)
 
     def gam_path(self, after):
         """

@@ -1,6 +1,5 @@
 from output_parser import IndentedTextParser
 from named_param import CreateNamedCmd
-from actions import Actions
 from manager import Manager, MockManager
 from resolver import resolver
 
