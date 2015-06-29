@@ -11,6 +11,8 @@ import re
 BRACESSTARTEND = '^\[(.*)\]$'
 
 def resolver(resolve_keys, value):
+	if resolve_keys is None:
+		return value
 	split = resolve_keys.split('.')
 	for substring in split:
 		match = re.match(BRACESSTARTEND, substring)

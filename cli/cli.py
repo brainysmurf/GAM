@@ -4,19 +4,29 @@ Routes out to handlers
 """
 
 #TODO: Move this into __init__
-__author__ = u'Adam Morris <amorris@mistermorris.com>'
-__version__ = u'0.5'
-__website__ = 'http://github.com/brainysmurf/gam'
-__license__ = u'Apache License 2.0 (http://www.apache.org/licenses/LICENSE-2.0)'
 
 import click
 import sys, re, collections
 
 #from gamlib.legacy import *
 
-from gami import CreateNamedCmd
-from gami import Manager, MockManager
+from gami.named_param import CreateNamedCmd
+from gami.manager import Manager, MockManager
 
+import sys, os, time, datetime, random, socket, csv, platform, re, calendar, base64, hashlib, string
+
+import json
+import httplib2
+import googleapiclient
+import googleapiclient.discovery
+import googleapiclient.errors
+import googleapiclient.http
+import oauth2client.client
+import oauth2client.file
+import oauth2client.tools
+import uritemplate
+
+from gami import const
 
 BACKSPACE = '\b'
 
@@ -103,16 +113,15 @@ def cli_version(obj):
         doGAMVersion()
 
     else:
+        manager = obj.manager
         import struct
-        click.echo('GAM Version: {} - {}'.format(__version__, __website__))
-        click.echo('Author: {}'.format(__author__))
+        click.echo('GAM Version: {} - {}'.format(const.__version__, const.__website__))
+        click.echo('Author: {}'.format(const.__author__))
         click.echo("Python Version: {0.major}.{0.minor}.{0.micro} {1}-bit {0.releaselevel}".format(sys.version_info, struct.calcsize('P')*8))
         click.echo('google-api-python-client: {}'.format(googleapiclient.__version__))
         click.echo('Platform: {}'.format(platform.platform()))
         click.echo('Platform Machine: {}'.format(platform.machine()))
-        click.echo("Gam Path: {}".format(getGamPath()))
-
-
+        click.echo("Gam Path: {}".format(manager.path_to_gam))
 
 @cli.command('batch', options_metavar=BACKSPACE)
 @click.argument('file', type=click.File('r'), metavar='<filename.ext>')
@@ -311,6 +320,8 @@ def info(ctx):
                 key_builder('userEmailMigrationEnabled')
                 key_builder('outboundGateway')
 
+        manager.output('hmm', manager.complete_results)
+
 @info.command()
 @click.argument('logo_file', type=click.File('rb'))
 @click.pass_obj
@@ -320,12 +331,51 @@ def logo(obj, logo_file):
     """
     pass
 
-@info.command(options_metavar="[options]")
+@info.command('group', options_metavar="[options]")
 @click.argument('groupname')
+@click.argument('nousers', metavar="[nousers]", default=False)
 @click.pass_obj
-def group(obj, groupname):
+def info_group(obj, groupname, nousers):
     if obj.legacy:
+        from gamlib.legacy import doGetGroupInfo
         doGetGroupInfo(group_name=groupname)
+    else:
+        manager = obj.manager
+
+        if groupname.startswith('uid:'):
+            groupname = groupname[ len('uid:')+1: ]
+        elif groupname.find(u'@') == -1:
+            groupname = u"{}@{}".format(groupname, manager.domain)
+
+        get_users = not nousers
+
+        with manager.build_calls(
+            'directory',
+            default_kwargs=dict(groupKey=groupname),
+            default_resolve_path=None
+            ) as key_builder:
+
+            key_builder('groups')
+
+        with manager.build_calls(
+            'groupssettings',
+            default_kwargs=dict(retry_reasons=[u'serviceLimit'], groupUniqueId=manager.get_result_key('email')),
+            default_resolve_path=None
+            ) as key_builder:
+
+            key_builder('groups')
+
+        if not nousers:
+            with manager.build_calls(
+                'directory',
+                default_kwargs=dict(function='list', items='members', groupKey=groupname),
+                pages=True,
+                default_resolve_path=None,
+                output_on_close=True
+                ) as key_builder:
+
+                key_builder('members')
+
 
 @info.command('user', options_metavar=BACKSPACE)   #options implemented different, so don't output "[OPTIONS]"
 @click.argument('username')
@@ -371,7 +421,8 @@ def info_user(obj, username, nogroups, noaliases, nolicenses, noschemas, uservie
 
         with manager.build_calls(
             'directory', \
-                default_kwargs=dict(userKey=username, projection=projection, customFieldMask=customFieldMask, viewType=viewType)
+                default_kwargs=dict(userKey=username, projection=projection, customFieldMask=customFieldMask, viewType=viewType),
+                output_on_close=True
             ) as key_builder:
 
             key_builder('users').\
@@ -380,6 +431,7 @@ def info_user(obj, username, nogroups, noaliases, nolicenses, noschemas, uservie
                 'creationTime', 'lastLoginTime', 'orgUnitPath', 'thumbnailPhotoUrl', 'ims', 'addresses', 'organizations', 'phones', 'emails', 
                 'relations', 'externalIds', 'customSchemas', 'aliases']).\
                 sub_key_post('lastLoginTime', lambda result: 'Never' if result == '1970-01-01T00:00:00.000Z' else result)
+
 
 @info.group('domain')
 @click.pass_context

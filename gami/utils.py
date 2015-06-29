@@ -1,6 +1,13 @@
 from cli.cli import cli
-from output_parser import IndentedTextParser
+from gami.output_parser import IndentedTextParser
 import click
+
+def run_gami_from_string(command_string, jsonify=True, *args, **kwargs):
+	"""
+	Runs the command, and, by default, returns the result as a useful pyton dictionary
+	"""
+	r = RunGami(jsonify=jsonify, *args, **kwargs)
+	return r.command_from_string(command_string)
 
 class RunGami:
 	"""
@@ -32,7 +39,7 @@ class RunGami:
 
 		from click.testing import CliRunner
 		run = CliRunner()
-		result = run.invoke(cli, params, catch_exceptions=self.catch_exceptions, legacy=False)
+		result = run.invoke(cli, params, catch_exceptions=self.catch_exceptions, extra=dict(legacy=False))
 
 		if self.jsonify and not result.exception:
 			python_dict = self.indent_parser.parse(result.output)

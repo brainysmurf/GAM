@@ -1,27 +1,54 @@
-GAMI: GAM Improved, GAM Importable GAM Installable-into-virtualenv
+GAMI: GAM Improved
 ============================
+
+Please note that gami is under active development.
 
 In addition to GAM (below) this package adds the following features:
 
 * Command line utility "gami" is installed into your path
+* Bash complete available
 * Installable into a virtualenv
 * Import a helper function that can run exact same gam commands listed in wiki. No more piping out to the system
 * Incorporates [click](http://click.pocoo.org/4/) and gets some bonus free-stuff, like automated help system, and python3 compatibility (although we have to change the print functions into click.echo calls, to start)
 
 1) Install into a Virtualenv
 -------------------------
-Recommend using [pyenv](https://github.com/yyuu/pyenv) and [pyenv-virtualenv](https://github.com/yyuu/pyenv-virtualenv)
+Clone me into a new directory, after that, I recommend first installing [pyenv](https://github.com/yyuu/pyenv) and [pyenv-virtualenv](https://github.com/yyuu/pyenv-virtualenv) to install into a virtualenv. This is required to work, and also is best practice with Python.
 ```
-cd path_to_dir
+cd <path_to_parent_folder>
+git clone <url>
+cd gami
+pyenv virtualenv gami
+pyenv local gami
 pip install -e .
 ```
-That's it. Now you have a new command line "gami"
+
+That's it. Now you have gami as a commande line. When gami updates, just do this to get the latest:
+
+```
+cd <path_to_gami>
+git pull origin master
+```
 
 
-2) Authenticate with Google
+2a) Authenticate with Google
 ------------------------
 From inside the directory, run python gam.py info domain and you'll get the usual rigamorle. You have to do this first before being able to use gami or the helper function
 
+```
+cd <path_to_gami>
+python gam.py
+```
+
+And follow the usual rigamarole.
+
+2b) Get yourself bash complete
+Nice, yes?
+
+```
+cd <path_to_gami>
+echo "source "`pwd`/bash-complete.sh >> ~/.bash_profile
+```
 
 3a) Use "gami" command line utility
 ----------
@@ -33,8 +60,9 @@ All the functions have help too.
 
 3b) Import a helper function
 ----------------------------
+You can use gami from within your python code.
 ```
-from gami import run_gami_from_string
+from gami.utils import run_gami_from_string
 run_gami_from_string('gam info domain')    # any regular gam command
 ```
 
