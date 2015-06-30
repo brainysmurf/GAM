@@ -290,37 +290,36 @@ def info(ctx):
             from gamlib.legacy import doGetDomainInfo
             doGetDomainInfo()
         else:
-            with manager.build_calls('directory', \
-                    default_kwargs=dict(fields=u'users(customerId)', customer=manager.customerId, sortOrder=u'DESCENDING')) \
-                    as key_builder:
 
-                key_builder('users').\
-                    function_list().\
-                    define_resolve_path("users.[0].customerId")
+            with manager.output_block():
+                with manager.api_block('directory') as api:
+                    with api.defaults_block() as defaults:
+                        defaults.\
+                            default_kwargs(function="list", fields=u'users(customerId)', customer=manager.customerId, sortOrder=u'DESCENDING').\
+                            default_resolve_path("users.[0].customerId")
+                    api.add_key('users')
 
-            with manager.build_calls(
-                'admin-settings', \
-                    default_kwargs=dict(function=u'get', domainName=manager.domain), \
-                    default_resolve_path="entry.apps$property.[0].value"
-                ) as key_builder:
+                with manager.api_block('admin-settings') as api:
+                    with api.config_block() as defaults:
+                        defaults.\
+                            default_kwargs(function=u'get', domainName=manager.domain).\
+                            default_resolve_path("entry.apps$property.[0].value")
+                    api.add_key('defaultLanguage')
+                    api.add_key('organizationName')
+                    api.add_key('maximumNumberOfUsers')
+                    api.add_key('currentNumberOfUsers')
+                    api.add_key('isVerified')
+                    api.add_key('edition')
+                    api.add_key('customerPIN')
+                    api.add_key('creationTime').\
+                        post_callback(creation_time_callback)
+                    api.add_key('countryCode')
+                    api.add_key('mxVerification')
+                    api.add_key('ssoGeneral')
+                    api.add_key('ssoSigningKey')
+                    api.add_key('userEmailMigrationEnabled')
+                    api.add_key('outboundGateway')
 
-                key_builder('defaultLanguage')
-                key_builder('organizationName')
-                key_builder('maximumNumberOfUsers')
-                key_builder('currentNumberOfUsers')
-                key_builder('isVerified')
-                key_builder('edition')
-                key_builder('customerPIN')
-                key_builder('creationTime').\
-                    post_callback(creation_time_callback)
-                key_builder('countryCode')
-                key_builder('mxVerification')
-                key_builder('ssoGeneral')
-                key_builder('ssoSigningKey')
-                key_builder('userEmailMigrationEnabled')
-                key_builder('outboundGateway')
-
-        manager.output('hmm', manager.complete_results)
 
 @info.command()
 @click.argument('logo_file', type=click.File('rb'))
@@ -419,18 +418,18 @@ def info_user(obj, username, nogroups, noaliases, nolicenses, noschemas, uservie
             # TODO: Looks like we need to implement a named parameter in case of schemas
             customFieldMask = None
 
-        with manager.build_calls(
-            'directory', \
-                default_kwargs=dict(userKey=username, projection=projection, customFieldMask=customFieldMask, viewType=viewType),
-                output_on_close=True
-            ) as key_builder:
+        with manager.output_block():
+            with manager.api_block('directory') as api:
+                with api.defaults_block() as defaults:
+                    defaults.\
+                        default_kwargs(userKey=username, projection=projection, customFieldMask=customFieldMask, viewType=viewType)
 
-            key_builder('users').\
-                define_sub_keys(['name.givenName', 'name.familyName', 'isAdmin', 'isDelegatedAdmin', 'agreedToTerms', 'ipWhitelisted', 
-                'suspended', 'suspensionReason', 'changePasswordAtNextLogin', 'id', 'customerId', 'isMailboxSetup', 'includeInGlobalAddressList',
-                'creationTime', 'lastLoginTime', 'orgUnitPath', 'thumbnailPhotoUrl', 'ims', 'addresses', 'organizations', 'phones', 'emails', 
-                'relations', 'externalIds', 'customSchemas', 'aliases']).\
-                sub_key_post('lastLoginTime', lambda result: 'Never' if result == '1970-01-01T00:00:00.000Z' else result)
+                api.add_key('users').\
+                    define_sub_keys(['name.givenName', 'name.familyName', 'isAdmin', 'isDelegatedAdmin', 'agreedToTerms', 'ipWhitelisted', 
+                    'suspended', 'suspensionReason', 'changePasswordAtNextLogin', 'id', 'customerId', 'isMailboxSetup', 'includeInGlobalAddressList',
+                    'creationTime', 'lastLoginTime', 'orgUnitPath', 'thumbnailPhotoUrl', 'ims', 'addresses', 'organizations', 'phones', 'emails', 
+                    'relations', 'externalIds', 'customSchemas', 'aliases']).\
+                    sub_key_post('lastLoginTime', lambda result: 'Never' if result == '1970-01-01T00:00:00.000Z' else result)
 
 
 @info.group('domain')
@@ -483,15 +482,178 @@ def cli_update(ctx):
     """ 
 
 @cli_update.command('group', cls=CreateNamedCmd, options_metavar=BACKSPACE)
-@click.argument('group_email', metavar="<email>")
+@click.argument('groupname', metavar="<name> | <email>")
 @click.pass_context
-def update_group(ctx, group_email):
+def update_group(ctx, groupname):
     """
     Update group info
     """
+    manager = ctx.obj.manager
+
     with ctx.command.validate_named(ctx, ['--add', '--user']) as values:
-        if ctx.legacy:
+        if ctx.obj.legacy:
             doUpdateGroup()
+        else:
+            if not(values.add and values.user):
+                raise click.UsageError('Add parameter requires user parameter, too', ctx=ctx)
+
+            if values.add:
+                which =  [u'add', u'update', u'sync', u'remove']
+                if not values.add.lower() in which:
+                    raise click.UsageError('Illegal add paremeter "{}", must be one of {}'.format(values.add, which))
+
+                with manager.output_block():
+                    with manager.api_block('directory') as api:
+                        with api.defaults_block():
+                            api.default_kwargs(userKey=user, fields=u'id')
+                        api.add_key('users')
+
+            return
+            group = sys.argv[3]
+            if sys.argv[4].lower() in [u'add', u'update', u'sync', u'remove']:
+                cd = buildGAPIObject(u'directory')
+                if group[0:3].lower() == u'uid:':
+                    group = group[4:]
+                elif group.find(u'@') == -1:
+                    group = u'%s@%s' % (group, domain)
+                if sys.argv[4].lower() in [u'add', u'update']:
+                    role = sys.argv[5].upper()
+                    i = 6
+                    if role not in [u'OWNER', u'MANAGER', u'MEMBER']:
+                        role = u'MEMBER'
+                        i = 5
+                    if sys.argv[i].lower() in usergroup_types:
+                        users_email = getUsersToModify(entity_type=sys.argv[i], entity=sys.argv[i+1])
+                    else:
+                        users_email = [sys.argv[i],]
+                    for user_email in users_email:
+                        if user_email != u'*' and user_email.find(u'@') == -1:
+                            user_email = u'%s@%s' % (user_email, domain)
+                        sys.stderr.write(u' %sing %s %s...' % (sys.argv[4].lower(), role.lower(), user_email))
+                        try:
+                            if sys.argv[4].lower() == u'add':
+                                body = {u'role': role}
+                                body[u'email'] = user_email 
+                                result = callGAPI(service=cd.members(), function=u'insert', soft_errors=True, groupKey=group, body=body)
+                            elif sys.argv[4].lower() == u'update':
+                                result = callGAPI(service=cd.members(), function=u'update', soft_errors=True, groupKey=group, memberKey=user_email, body={u'email': user_email, u'role': role})
+                            try:
+                                if str(result[u'email']).lower() != user_email.lower():
+                                    print u'added %s (primary address) to group' % result[u'email']
+                                else:
+                                    print u'added %s to group' % result[u'email']
+                            except TypeError:
+                                pass
+                        except googleapiclient.errors.HttpError:
+                            pass
+                elif sys.argv[4].lower() == u'sync':
+                    role = sys.argv[5].upper()
+                    i = 6
+                    if role not in [u'OWNER', u'MANAGER', u'MEMBER']:
+                        role = u'MEMBER'
+                        i = 5
+                    users_email = getUsersToModify(entity_type=sys.argv[i], entity=sys.argv[i+1])
+                    users_email = [x.lower() for x in users_email]
+                    current_emails = getUsersToModify(entity_type=u'group', entity=group, member_type=role)
+                    current_emails = [x.lower() for x in current_emails]
+                    to_add = list(set(users_email) - set(current_emails))
+                    to_remove = list(set(current_emails) - set(users_email))
+                    for user_email in to_add:
+                        sys.stderr.write(u' adding %s %s\n' % (role, user_email))
+                        try:
+                            result = callGAPI(service=cd.members(), function=u'insert', soft_errors=True, throw_reasons=[u'duplicate'], groupKey=group, body={u'email': user_email, u'role': role})
+                        except googleapiclient.errors.HttpError:
+                            result = callGAPI(service=cd.members(), function=u'update', soft_errors=True, groupKey=group, memberKey=user_email, body={u'email': user_email, u'role': role})
+                    for user_email in to_remove:
+                        sys.stderr.write(u' removing %s\n' % user_email)
+                        result = callGAPI(service=cd.members(), function=u'delete', soft_errors=True, groupKey=group, memberKey=user_email)
+                elif sys.argv[4].lower() == u'remove':
+                    i = 5
+                    if sys.argv[i].lower() in [u'member', u'manager', u'owner']:
+                        i += 1
+                    if sys.argv[i].lower() in usergroup_types:
+                        user_emails = getUsersToModify(entity_type=sys.argv[i], entity=sys.argv[i+1])
+                    else:
+                        user_emails = [sys.argv[i],]
+                    for user_email in user_emails:
+                        if user_email != u'*' and user_email.find(u'@') == -1:
+                            user_email = u'%s@%s' % (user_email, domain)
+                        sys.stderr.write(u' removing %s\n' % user_email)
+                        result = callGAPI(service=cd.members(), function=u'delete', soft_errors=True, groupKey=group, memberKey=user_email)
+            else:
+                i = 4
+                use_cd_api = False
+                use_gs_api = False
+                gs_body = dict()
+                cd_body = dict()
+                while i < len(sys.argv):
+                    if sys.argv[i].lower() == u'email':
+                        use_cd_api = True
+                        cd_body[u'email'] = sys.argv[i+1]
+                        i += 2
+                    elif sys.argv[i].lower() == u'admincreated':
+                        use_cd_api = True
+                        cd_body[u'adminCreated'] = sys.argv[i+1].lower()
+                        if cd_body[u'adminCreated'] not in true_false:
+                            print u'Error: Value for admincreated must be true or false. Got %s' % admin_created
+                            sys.exit(9)
+                        i += 2
+                    else:
+                        value = sys.argv[i+1]
+                        gs_object = buildDiscoveryObject(u'groupssettings')
+                        matches_gs_setting = False
+                        for (attrib, params) in gs_object[u'schemas'][u'Groups'][u'properties'].items():
+                            if attrib in [u'kind', u'etag', u'email']:
+                                continue
+                            if sys.argv[i].lower().replace(u'_', u'') == attrib.lower():
+                                matches_gs_setting = True
+                                if params[u'type'] == u'integer':
+                                    try:
+                                        if value[-1:].upper() == u'M':
+                                            value = int(value[:-1]) * 1024 * 1024
+                                        elif value[-1:].upper() == u'K':
+                                            value = int(value[:-1]) * 1024
+                                        elif value[-1].upper() == u'B':
+                                            value = int(value[:-1])
+                                        else:
+                                            value = int(value)
+                                    except ValueError:
+                                        print u'Error: %s must be a number ending with M (megabytes), K (kilobytes) or nothing (bytes). Got %s' % value
+                                        sys.exit(9)
+                                elif params[u'type'] == u'string':
+                                    if params[u'description'].find(value.upper()) != -1: # ugly hack because API wants some values uppercased.
+                                        value = value.upper()
+                                    elif value.lower() in true_values:
+                                        value = u'true'
+                                    elif value.lower() in false_values:
+                                        value = u'false'
+                                break
+                        if not matches_gs_setting:
+                            print u'ERROR: %s is not a valid argument for "gam update group..."' % sys.argv[i]
+                            sys.exit(9)
+                        gs_body[attrib] = value
+                        use_gs_api = True
+                        i += 2
+                if group[:4].lower() == u'uid:': # group settings API won't take uid so we make sure cd API is used so that we can grab real email.
+                    use_cd_api = True
+                    group = group[4:]
+                elif group.find(u'@') == -1:
+                    cd = buildGAPIObject(u'directory')
+                    group = u'%s@%s' % (group, domain)
+                if use_cd_api:
+                    cd = buildGAPIObject(u'directory')
+                    try:
+                        if cd_body[u'email'].find('@') == -1:
+                            cd_body[u'email'] = u'%s@%s' % (cd_body[u'email'], domain)
+                    except KeyError:
+                        pass
+                    cd_result = callGAPI(service=cd.groups(), function=u'patch', groupKey=group, body=cd_body)
+                if use_gs_api:
+                    gs = buildGAPIObject(u'groupssettings')
+                    if use_cd_api:
+                        group = cd_result[u'email']
+                    gs_result = callGAPI(service=gs.groups(), function=u'patch', retry_reasons=[u'serviceLimit'], groupUniqueId=group, body=gs_body)
+                print u'updated group %s' % group
 
 
 

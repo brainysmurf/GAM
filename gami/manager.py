@@ -43,12 +43,11 @@ class Key(object):
         self.builder = builder
         self.default = None
         self.post = None
-        # This is the most common one in GAM
-        self.resolve_path = builder.manager.default_resolve_path
 
         # set the defaults
-        self.kwargs = self.builder.default_kwargs
-        self.default_resolve_path = self.builder.default_resolve_path
+        self.kwargs = self.builder._default_kwargs
+        self.resolve_path = builder._default_resolve_path
+
 
     def define_sub_keys(self, subkeys):
         self.sub_keys = subkeys
@@ -72,7 +71,6 @@ class Key(object):
 
     def function_list(self):
         self.define_kwarg('function', 'list')
-        return self
 
     def function_send(self):
         self.define_kwarg('function', 'send')
@@ -106,25 +104,48 @@ class KeyBuilder(object):
     def __init__(self, manager):
         self.keys = []
         self.manager = manager
-        self.default_kwargs = manager.default_kwargs
-        self.default_resolve_path = manager.default_resolve_path
 
-    def __call__(self, key):
+    def add_key(self, key):
         item = Key(key, self)
         self.keys.append(item)
         return item
+
+    @contextlib.contextmanager
+    def defaults_block(self):
+        self._default_kwargs = self.manager.default_kwargs
+        self._default_resolve_path = self.manager.default_resolve_path
+        yield self
+
+    def define_kwarg(self, key, value):
+        self._default_kwargs[key] = value
+        return self
+
+    def default_resolve_path(self, path):
+        self._default_resolve_path = path
+        return self
+
+    def default_kwargs(self, **kwargs):
+        self._default_kwargs = kwargs
+        return self
+
+    def default_resolve_path(self, path):
+        self._default_resolve_path = path
+        return self
+
 
 class Manager(object):
     results_key = 'results'
     error_key = 'errors'
     warning_key = 'warnings'
 
-    def __init__(self, mock=False):
+    def __init__(self, default_resolve_path=None, default_kwargs=None, mock=False):
         self.mock = mock
         self.key_builder = None
         self.credentials = None
         self._path_to_gam = None
         self.result = None
+        self.default_resolve_path = default_resolve_path
+        self.default_kwargs = default_kwargs
         self.complete_results = {self.results_key:{}, self.error_key:defaultdict(list), self.warning_key:defaultdict(list)}
         self.init()
 
@@ -267,7 +288,12 @@ class Manager(object):
         return service
 
     @contextlib.contextmanager
-    def build_calls(self, api, pages=False, default_resolve_path='entry.apps$property.[0].value', default_kwargs=None, output_on_close=False):
+    def output_block(self):
+        yield self
+        self.output()
+
+    @contextlib.contextmanager
+    def api_block(self, api, pages=False, output_on_close=False):
         """
         Sets up self.service
         yields a key builder which allows dev to build up a list of configuration
@@ -275,8 +301,6 @@ class Manager(object):
         """
         self.api = api
         self.pages = pages
-        self.default_resolve_path = default_resolve_path
-        self.default_kwargs = default_kwargs
 
         self.service = self.buildGAPIObject(self.api)
 
