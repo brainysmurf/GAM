@@ -300,7 +300,7 @@ def info(ctx):
                     api.add_key('users')
 
                 with manager.api_block('admin-settings') as api:
-                    with api.config_block() as defaults:
+                    with api.defaults_block() as defaults:
                         defaults.\
                             default_kwargs(function=u'get', domainName=manager.domain).\
                             default_resolve_path("entry.apps$property.[0].value")
@@ -348,32 +348,28 @@ def info_group(obj, groupname, nousers):
 
         get_users = not nousers
 
-        with manager.build_calls(
-            'directory',
-            default_kwargs=dict(groupKey=groupname),
-            default_resolve_path=None
-            ) as key_builder:
+        with manager.output_block():
+            with manager.api_block('directory') as api:
+                with api.defaults_block() as defaults:
+                    defaults.\
+                        default_kwargs(groupKey=groupname).\
+                        default_resolve_path(None)
+                api.add_key('groups')
 
-            key_builder('groups')
+            with manager.api_block('groupssettings') as api:
+                with api.defaults_block() as defaults:
+                    defaults.\
+                        default_kwargs(retry_reasons=[u'serviceLimit'], groupUniqueId=manager.get_result_key('email')).\
+                        default_resolve_path(None)
+                api.add_key('groups')
 
-        with manager.build_calls(
-            'groupssettings',
-            default_kwargs=dict(retry_reasons=[u'serviceLimit'], groupUniqueId=manager.get_result_key('email')),
-            default_resolve_path=None
-            ) as key_builder:
-
-            key_builder('groups')
-
-        if not nousers:
-            with manager.build_calls(
-                'directory',
-                default_kwargs=dict(function='list', items='members', groupKey=groupname),
-                pages=True,
-                default_resolve_path=None,
-                output_on_close=True
-                ) as key_builder:
-
-                key_builder('members')
+            if not nousers:
+                with manager.api_block('directory', pages=True) as api:
+                    with api.defaults_block() as defaults:
+                        defaults.\
+                            default_kwargs(function='list', items='members', groupKey=groupname).\
+                            default_resolve_path(None)
+                    api.add_key('members')
 
 
 @info.command('user', options_metavar=BACKSPACE)   #options implemented different, so don't output "[OPTIONS]"

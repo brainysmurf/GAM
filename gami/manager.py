@@ -48,7 +48,6 @@ class Key(object):
         self.kwargs = self.builder._default_kwargs
         self.resolve_path = builder._default_resolve_path
 
-
     def define_sub_keys(self, subkeys):
         self.sub_keys = subkeys
         return self
@@ -393,6 +392,17 @@ class Manager(object):
         """
         return self.result
 
+    def normalize_value(self, value):
+        """
+        Detect and see if value is a string, and convert it to python data formats if so
+        """
+        if not isinstance(value, str) and not isinstance(value, unicode):
+            return value
+        if value.isdigit():
+            return int(value)
+        else:
+            return {u'true': True, u'false': False}.get(value.lower(), value)
+
     def call_and_build(self):
         ret = {self.results_key:{}}
         working = ret[self.results_key]
@@ -420,7 +430,7 @@ class Manager(object):
 
                     # Just use the last part of the resolve path
                     key_name = k.split('.')[-1]
-                    working[key_name] = value
+                    working[key_name] = self.normalize_value(value)
             else:
                 if '.' in key.key:
                     try:
@@ -436,13 +446,13 @@ class Manager(object):
                         continue
 
                 if isinstance(value, dict):
-                    working.update(value)
+                    working.update({k:self.normalize_value(v) for k,v in value.items()})
                 elif isinstance(value, list):
-                    working[key.key] = value
+                    working[key.key] = [self.normalize_value(v) for v in value]
                 else:
                     if key.post:
                         value = key.post(value)
-                    working[key.key] = value
+                    working[key.key] = self.normalize_value(value)
         return ret
 
 class MockServiceCall(object):
