@@ -7,6 +7,7 @@ Routes out to handlers
 
 import click
 import sys, re, collections
+import functools
 
 #from gamlib.legacy import *
 
@@ -444,28 +445,75 @@ def cli_create(ctx):
     Contains commands for creating users, groups, whatever
     """
 
-@cli_create.command('user', cls=CreateNamedCmd, options_metavar=BACKSPACE)
+create_user_params = [
+        'firstname',     'lastname', 'org', 
+        '--password',    '--changepassword:-',
+        '--gal:+',       '--suspended:-',
+        '--type:custom,home,other,work'
+        ]
+CreateUserNamedCmd = functools.partial(CreateNamedCmd, named_params=create_user_params)
+
+@cli_create.command('user', cls=CreateUserNamedCmd, options_metavar=BACKSPACE)
 @click.argument('username')
 @click.pass_context
 def create_user(ctx, username):
     """
     Creates a user!
+
+    \b
+    Ex) Most basic: Create a generic user "happystudent@domain":
+        gami create user happystudent firstname happy lastname student org /users/students 
+
+    \b
+    Ex) Create a user that doesn't show up in GAL:
+        gami create user happystudent firstname happy lastname student org /users/students gal off        
+
+    \b 
+    Ex) Creates a suspended user that of home type:
+        gami create user happystudent firstname happy lastname student org /users/stdents suspend on type home
     """
-    with ctx.command.validate_named(ctx, ['firstname', 'lastname', '--password', '--changepassword', '--gal', 'org', '--type', '--externalid']) as values:
+    with ctx.command.validate_params(ctx) as values:
+
         if ctx.obj.legacy:
             from gamlib.legacy import doCreateUser
             doCreateUser()
         else:
-            ctx.obj.actions.create_user(username)
+            manager = ctx.obj.manager
 
-@cli_create.command('group', cls=CreateNamedCmd, options_metavar=BACKSPACE)
+            with manager.output_block():
+                with manager.api_block('directory') as directory:
+                    with directory.defaults_block() as defaults:
+                        defaults.\
+                            default_kwargs(fields='primaryEmail')
+
+                    # Build up "body" with relevant data
+                    body = type('Body', (), {})
+                    body.name = type('Body.name', (), {})
+
+                    # Required
+                    body.name.givenName = values.firstname
+                    body.name.familyName= values.lastname
+                    body.orgUnitPath = values.org
+
+                    # Optional booleans
+                    body.includeInGlobalAddressList = values.gal
+                    body.suspended = values.suspended
+
+                    from IPython import embed; embed(); exit()                    
+
+                    directory.add_key('users').\
+                        function_insert().\
+                        define_kwarg(body=body)
+
+CreateGroupNamedCmd = functools.partial(CreateNamedCmd, named_params=['name', '--description'])
+@cli_create.command('group', cls=CreateGroupNamedCmd, options_metavar=BACKSPACE)
 @click.argument('email', metavar="<email>")
 @click.pass_context
 def create_group(ctx, email):
     """
     Creates a group!    
     """
-    with ctx.command.validate_named(ctx, ['name', '--description']) as values:
+    with ctx.command.validate_params(ctx) as values:
         # do something here in future, we have the values
         if ctx.obj.legacy:
             doCreateGroup()
@@ -477,7 +525,8 @@ def cli_update(ctx):
     Updates
     """ 
 
-@cli_update.command('group', cls=CreateNamedCmd, options_metavar=BACKSPACE)
+UpdateGroupNamedCmd = functools.partial(CreateNamedCmd, named_params=['-add', '--user'])
+@cli_update.command('group', cls=UpdateGroupNamedCmd, options_metavar=BACKSPACE)
 @click.argument('groupname', metavar="<name> | <email>")
 @click.pass_context
 def update_group(ctx, groupname):
@@ -486,7 +535,7 @@ def update_group(ctx, groupname):
     """
     manager = ctx.obj.manager
 
-    with ctx.command.validate_named(ctx, ['--add', '--user']) as values:
+    with ctx.command.validate_params(ctx) as values:
         if ctx.obj.legacy:
             doUpdateGroup()
         else:
